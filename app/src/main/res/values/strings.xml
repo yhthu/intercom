@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Intercom</string>
+    <string name="send_success">发送 成功</string>
+    <string name="send_failed">发送失败</string>
+</resources>
