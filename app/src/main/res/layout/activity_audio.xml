@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/activity_audio_local_network_user_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="当前局域网的对讲机用户：\n（按住F2键即可对讲）"
+        android:textSize="15sp" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/activity_audio_local_network_user_rv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/activity_audio_local_network_user_tv"
+        android:layout_marginBottom="25dp"
+        android:layout_marginTop="10dp"
+        app:layoutManager="LinearLayoutManager">
+
+    </android.support.v7.widget.RecyclerView>
+
+    <TextView
+        android:id="@+id/activity_audio_current_ip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="当前IP地址" />
+</RelativeLayout>
