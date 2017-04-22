@@ -19,8 +19,8 @@ public class Constants {
     // 子网广播端口
     public static final int BROADCAST_PORT = 10000;
 
-    // 采样频率：8KHZ
-    public static final int sampleRateInHz = 8000;
+    // 采样频率
+    public static final int sampleRateInHz = 44100;
     // 音频数据格式:PCM 16位每个样本，保证设备支持。
     public static final int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
 
@@ -30,7 +30,6 @@ public class Constants {
     public static final int inputChannelConfig = AudioFormat.CHANNEL_IN_MONO;
 
     // 音频播放端
-//    public static final int streamType = AudioManager.STREAM_MUSIC;
     public static final int streamType = AudioManager.STREAM_VOICE_CALL;
     // 输出单声道
     public static final int outputChannelConfig = AudioFormat.CHANNEL_OUT_MONO;

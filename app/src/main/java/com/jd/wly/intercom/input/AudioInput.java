@@ -2,10 +2,10 @@ package com.jd.wly.intercom.input;
 
 import android.os.Handler;
 
-import com.jd.wly.intercom.input.Recorder;
-
 /**
- * Created by yanghao1 on 2017/4/11.
+ * 音频录制、编码、发送线程
+ *
+ * @author yanghao1
  */
 public class AudioInput implements Runnable {
 
@@ -16,14 +16,15 @@ public class AudioInput implements Runnable {
 
     // 录制状态
     private boolean recording = false;
-    // 音频数据
-    private byte[] audioData = new byte[]{};
 
     public AudioInput(Handler handler) {
         this.handler = handler;
         initJobHandler();
     }
 
+    /**
+     * 初始化录制、编码、发送，并指定关联
+     */
     private void initJobHandler() {
         recorder = new Recorder();
         encoder = new Encoder();
@@ -43,7 +44,7 @@ public class AudioInput implements Runnable {
     @Override
     public void run() {
         while (recording) {
-            recorder.handleRequest(audioData);
+            recorder.handleRequest(null);
         }
     }
 

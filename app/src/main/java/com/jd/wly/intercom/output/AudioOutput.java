@@ -2,15 +2,12 @@ package com.jd.wly.intercom.output;
 
 import android.os.Handler;
 
-import com.jd.wly.intercom.input.Encoder;
-import com.jd.wly.intercom.input.Recorder;
-import com.jd.wly.intercom.input.Sender;
-
 /**
- * Created by yanghao1 on 2017/4/11.
+ * 音频接收、解码、播放线程
+ *
+ * @author yanghao1
  */
-
-public class AudioOutput implements Runnable{
+public class AudioOutput implements Runnable {
 
     private Handler handler;
     private Receiver receiver;
@@ -22,6 +19,9 @@ public class AudioOutput implements Runnable{
         initJobHandler();
     }
 
+    /**
+     * 初始化接收、解码、播放，并指定关联
+     */
     private void initJobHandler() {
         receiver = new Receiver(handler);
         decoder = new Decoder();

@@ -7,21 +7,18 @@ import com.jd.wly.intercom.util.Constants;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.SocketException;
 
 /**
- * Created by yanghao1 on 2017/4/12.
+ * UDP多播发送
+ *
+ * @author yanghao1
  */
-
-public class Sender extends JobHandler {
-
+public class Sender extends JobHandler<byte[], byte[]> {
 
     // UI界面Handler
     private Handler handler;
-
     // 组播Socket
     private MulticastSocket multicastSocket;
     // IPV4地址
@@ -44,7 +41,7 @@ public class Sender extends JobHandler {
             inetAddress = InetAddress.getByName(Constants.MULTI_BROADCAST_IP);
             multicastSocket = new MulticastSocket();
             multicastSocket.setBroadcast(true);
-//            multicastSocket.setLoopbackMode(false);
+            multicastSocket.setLoopbackMode(true);
         } catch (IOException e) {
             e.printStackTrace();
         }

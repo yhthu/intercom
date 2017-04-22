@@ -6,10 +6,11 @@ import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.Constants;
 
 /**
- * Created by yanghao1 on 2017/4/12.
+ * AudioTrack音频播放
+ *
+ * @author yanghao1
  */
-
-public class Tracker extends JobHandler {
+public class Tracker extends JobHandler<short[], short[]> {
 
     private AudioTrack audioTrack;
     // 音频大小
@@ -26,8 +27,8 @@ public class Tracker extends JobHandler {
     }
 
     @Override
-    public void handleRequest(byte[] audioData) {
-        byte[] bytesPkg = audioData.clone();
+    public void handleRequest(short[] audioData) {
+        short[] bytesPkg = audioData.clone();
         audioTrack.play();
         try {
             audioTrack.write(bytesPkg, 0, bytesPkg.length);

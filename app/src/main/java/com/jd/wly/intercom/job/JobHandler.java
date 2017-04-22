@@ -1,22 +1,25 @@
 package com.jd.wly.intercom.job;
 
 /**
- * Created by yanghao1 on 2017/4/12.
+ * 数据处理节点
+ *
+ * @param <I> 输入数据类型
+ * @param <O> 输出数据类型
+ * @author yanghao1
  */
+public abstract class JobHandler<I, O> {
 
-public abstract class JobHandler {
+    private JobHandler<O, ?> nextJobHandler;
 
-    private JobHandler nextJobHandler;
-
-    public JobHandler getNextJobHandler() {
+    public JobHandler<O, ?> getNextJobHandler() {
         return nextJobHandler;
     }
 
-    public void setNextJobHandler(JobHandler nextJobHandler) {
+    public void setNextJobHandler(JobHandler<O, ?> nextJobHandler) {
         this.nextJobHandler = nextJobHandler;
     }
 
-    public abstract void handleRequest(byte[] audioData);
+    public abstract void handleRequest(I audioData);
 
     /**
      * 释放资源
