@@ -2,6 +2,7 @@ package com.jd.wly.intercom.output;
 
 import android.media.AudioTrack;
 
+import com.jd.wly.intercom.input.Recorder;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.Constants;
 
@@ -23,7 +24,7 @@ public class Tracker extends JobHandler<short[], short[]> {
         // 初始化音频播放
         audioTrack = new AudioTrack(Constants.streamType,
                 Constants.sampleRateInHz, Constants.outputChannelConfig, Constants.audioFormat,
-                outAudioBufferSize, Constants.trackMode);
+                outAudioBufferSize, Constants.trackMode, Recorder.audioRecord.getAudioSessionId());
     }
 
     @Override

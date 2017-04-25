@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <speex/speex.h>
+#include <speex/speex_preprocess.h>
 
 #include<Android/log.h>
 
@@ -16,6 +17,8 @@ static SpeexBits ebits, dbits;
 void *enc_state;
 void *dec_state;
 
+static SpeexPreprocessState *preprocess_state;
+
 static JavaVM *gJavaVM;
 
 #define TAG "Intercom JNI" // 这个是自定义的LOG的标识
@@ -27,7 +30,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
 
     if (codec_open++ != 0)
         return (jint)0;
-
+    // 初始化SpeexBits数据结构
     speex_bits_init(&ebits);
     speex_bits_init(&dbits);
     // 设置编码为窄带编码
@@ -35,10 +38,37 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
     dec_state = speex_decoder_init(&speex_nb_mode);
     // 压缩比例
     tmp = compression;
-    // 设置编码的比特率，即语音质量。由参数tmp控制
     speex_encoder_ctl(enc_state, SPEEX_SET_QUALITY, &tmp);
+    // 设置编码的比特率，即语音质量。由参数tmp控制
     speex_encoder_ctl(enc_state, SPEEX_GET_FRAME_SIZE, &enc_frame_size);
     speex_decoder_ctl(dec_state, SPEEX_GET_FRAME_SIZE, &dec_frame_size);
+
+    // frame_size = enc_frame_size,
+    preprocess_state = speex_preprocess_state_init(160, 44100);//创建预处理对象
+
+    int denoise = 1;
+    int noiseSuppress = -90;
+    // 打开降噪
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_DENOISE, &denoise);
+    // 设置噪声的dB
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &noiseSuppress);
+
+
+    int agc = 1;
+    float q = 8000;
+    //actually default is 8000(0,32768),here make it louder for voice is not loudy enough by default. 8000
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC, &agc);//增益
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC_LEVEL, &q);
+
+    int vad = 1;
+    int vadProbStart = 80;
+    int vadProbContinue = 65;
+    // 静音检测
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_VAD, &vad);
+    // Set probability required for the VAD to go from silence to voice
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_PROB_START , &vadProbStart);
+    // Set probability required for the VAD to stay in the voice state (integer percent)
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_PROB_CONTINUE, &vadProbContinue);
 
     return (jint)0;
 }
@@ -59,6 +89,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_encode
 
     for (i = 0; i < nsamples; i++) {
         env->GetShortArrayRegion(lin, offset + i*enc_frame_size, enc_frame_size, buffer);
+        speex_preprocess_run(preprocess_state, buffer);
         speex_encode_int(enc_state, buffer, &ebits);
     }
 
@@ -103,7 +134,7 @@ JNIEXPORT void JNICALL Java_com_jd_wly_intercom_audio_Speex_close
 
     if (--codec_open != 0)
         return;
-
+    speex_preprocess_state_destroy(preprocess_state);
     speex_bits_destroy(&ebits);
     speex_bits_destroy(&dbits);
     speex_decoder_destroy(dec_state);

@@ -3,3 +3,4 @@
 
 目前已实现的功能：
 - [通过UDP广播实现Android局域网Peer Discovering](http://www.jianshu.com/p/cc62e070a6d2)（2017/4/8）
+- [实时Android语音对讲系统架构](http://www.jianshu.com/p/ce88092fabfa)(2017/4/22)

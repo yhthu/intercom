@@ -13,7 +13,7 @@ import com.jd.wly.intercom.util.Constants;
  */
 public class Recorder extends JobHandler<short[], short[]> {
 
-    private AudioRecord audioRecord;
+    public static AudioRecord audioRecord;
     // 音频大小
     private int inAudioBufferSize;
 
