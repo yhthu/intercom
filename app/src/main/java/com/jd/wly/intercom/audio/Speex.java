@@ -39,7 +39,7 @@ public class Speex {
 
     public native int decode(byte encoded[], short lin[], int size);
 
-    public native int encode(short lin[], int offset, byte encoded[], int size);
+    public native int encode(short lin[], byte encoded[], int size);
 
     public native void close();
 }

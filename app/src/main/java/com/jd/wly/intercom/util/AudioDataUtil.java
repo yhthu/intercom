@@ -20,24 +20,8 @@ public class AudioDataUtil {
      * @return 编码后的数据
      */
     public static byte[] raw2spx(short[] audioData) {
-        // 原始数据中包含的整数个encFrameSize
-        int nSamples = audioData.length / encFrameSize;
-        byte[] encodedData = new byte[((audioData.length - 1) / encFrameSize + 1) * encodedFrameSize];
-        short[] rawByte;
-        // 将原数据转换成spx压缩的文件
-        byte[] encodingData = new byte[encFrameSize];
-        int readTotal = 0;
-        for (int i = 0; i < nSamples; i++) {
-            rawByte = new short[encFrameSize];
-            System.arraycopy(audioData, i * encFrameSize, rawByte, 0, encFrameSize);
-            int encodeSize = Speex.getInstance().encode(rawByte, 0, encodingData, rawByte.length);
-            System.arraycopy(encodingData, 0, encodedData, readTotal, encodeSize);
-            readTotal += encodeSize;
-        }
-        rawByte = new short[encFrameSize];
-        System.arraycopy(audioData, nSamples * encFrameSize, rawByte, 0, audioData.length - nSamples * encFrameSize);
-        int encodeSize = Speex.getInstance().encode(rawByte, 0, encodingData, rawByte.length);
-        System.arraycopy(encodingData, 0, encodedData, readTotal, encodeSize);
+        byte[] encodedData = new byte[audioData.length / encFrameSize * encodedFrameSize];
+        Speex.getInstance().encode(audioData, encodedData, audioData.length);
         return encodedData;
     }
 
@@ -49,16 +33,7 @@ public class AudioDataUtil {
      */
     public static short[] spx2raw(byte[] encodedData) {
         short[] shortRawData = new short[encodedData.length * decFrameSize / encodedFrameSize];
-        int nSamples = encodedData.length / encodedFrameSize;
-        byte[] encodedByte = new byte[encodedFrameSize];
-        short[] decodingData = new short[decFrameSize];
-        int decodeTotal = 0;
-        for (int i = 0; i < nSamples; i++) {
-            System.arraycopy(encodedData, i * encodedFrameSize, encodedByte, 0, encodedFrameSize);
-            int decodeSize = Speex.getInstance().decode(encodedByte, decodingData, encodedByte.length);
-            System.arraycopy(decodingData, 0, shortRawData, decodeTotal, decodeSize);
-            decodeTotal += decodeSize;
-        }
+        Speex.getInstance().decode(encodedData, shortRawData, encodedFrameSize);
         return shortRawData;
     }
 

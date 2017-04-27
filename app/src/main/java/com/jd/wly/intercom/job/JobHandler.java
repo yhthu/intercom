@@ -1,29 +1,23 @@
 package com.jd.wly.intercom.job;
 
+import android.os.Handler;
+
+import com.jd.wly.intercom.data.AudioData;
+import com.jd.wly.intercom.data.MessageQueue;
+
 /**
  * 数据处理节点
  *
- * @param <I> 输入数据类型
- * @param <O> 输出数据类型
  * @author yanghao1
  */
-public abstract class JobHandler<I, O> {
+public abstract class JobHandler implements Runnable {
 
-    private JobHandler<O, ?> nextJobHandler;
+    protected Handler handler;
 
-    public JobHandler<O, ?> getNextJobHandler() {
-        return nextJobHandler;
+    public JobHandler(Handler handler) {
+        this.handler = handler;
     }
 
-    public void setNextJobHandler(JobHandler<O, ?> nextJobHandler) {
-        this.nextJobHandler = nextJobHandler;
-    }
-
-    public abstract void handleRequest(I audioData);
-
-    /**
-     * 释放资源
-     */
     public void free() {
 
     }

@@ -47,7 +47,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
     preprocess_state = speex_preprocess_state_init(160, 44100);//创建预处理对象
 
     int denoise = 1;
-    int noiseSuppress = -90;
+    int noiseSuppress = -80;
     // 打开降噪
     speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_DENOISE, &denoise);
     // 设置噪声的dB
@@ -56,8 +56,8 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
 
     int agc = 1;
     float q = 8000;
-    //actually default is 8000(0,32768),here make it louder for voice is not loudy enough by default. 8000
-    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC, &agc);//增益
+    // 打开增益
+    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC, &agc);
     speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC_LEVEL, &q);
 
     int vad = 1;
@@ -65,9 +65,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
     int vadProbContinue = 65;
     // 静音检测
     speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_VAD, &vad);
-    // Set probability required for the VAD to go from silence to voice
     speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_PROB_START , &vadProbStart);
-    // Set probability required for the VAD to stay in the voice state (integer percent)
     speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_PROB_CONTINUE, &vadProbContinue);
 
     return (jint)0;
@@ -75,26 +73,31 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
 
 extern "C"
 JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_encode
-    (JNIEnv *env, jobject obj, jshortArray lin, jint offset, jbyteArray encoded, jint size) {
+    (JNIEnv *env, jobject obj, jshortArray lin, jbyteArray encoded, jint size) {
 
     jshort buffer[enc_frame_size];
     jbyte output_buffer[enc_frame_size];
-    int nsamples = (size-1)/enc_frame_size + 1;
-    int i, tot_bytes = 0;
+    int nSamples = size / enc_frame_size;
+    int i, tot_bytes, curr_bytes = 0;
 
     if (!codec_open)
         return 0;
 
-    speex_bits_reset(&ebits);
-
-    for (i = 0; i < nsamples; i++) {
-        env->GetShortArrayRegion(lin, offset + i*enc_frame_size, enc_frame_size, buffer);
+    for (i = 0; i < nSamples; i++) {
+        // 从Java中拷贝数据到C中，每次拷贝enc_frame_size = 160个short
+        env->GetShortArrayRegion(lin, i*enc_frame_size, enc_frame_size, buffer);
+        // 降噪、增益、静音检测等处理
         speex_preprocess_run(preprocess_state, buffer);
+        // 编码数据到ebits中
+        speex_bits_reset(&ebits);
         speex_encode_int(enc_state, buffer, &ebits);
+        // 将编码数据写入output_buffer，每次最多写入enc_frame_size = 160个，实际写入curr_bytes个char
+        curr_bytes = speex_bits_write(&ebits, (char *)output_buffer, enc_frame_size);
+        // 将C层的char类型数据写入Java层的字节数组中，开始写入index为tot_bytes，本次写入curr_bytes
+        env->SetByteArrayRegion(encoded, tot_bytes, curr_bytes, output_buffer);
+        // 更新总数
+        tot_bytes += curr_bytes;
     }
-
-    tot_bytes = speex_bits_write(&ebits, (char *)output_buffer, enc_frame_size);
-    env->SetByteArrayRegion(encoded, 0, tot_bytes, output_buffer);
 
     return (jint)tot_bytes;
 }
@@ -105,17 +108,26 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_decode
 
     jbyte buffer[dec_frame_size];
     jshort output_buffer[dec_frame_size];
-    jsize encoded_length = size;
+    int length = env->GetArrayLength(encoded);
+    int nSamples = length / size;
+    int i = 0;
 
     if (!codec_open)
         return 0;
 
-    env->GetByteArrayRegion(encoded, 0, encoded_length, buffer);
-    speex_bits_read_from(&dbits, (char *)buffer, encoded_length);
-    speex_decode_int(dec_state, &dbits, output_buffer);
-    env->SetShortArrayRegion(lin, 0, dec_frame_size, output_buffer);
+    for(i = 0; i < nSamples; i++) {
+        // 从Java中拷贝数据到C中，size = 28个字节
+        env->GetByteArrayRegion(encoded, i * size, size, buffer);
+        // 编码数据到dbits中
+        speex_bits_read_from(&dbits, (char *)buffer, size);
+        // 解码到output_buffer，28个字节到160个short
+        speex_decode_int(dec_state, &dbits, output_buffer);
+        // 将C层的short类型数据写入Java层的short数组中
+        speex_preprocess_run(preprocess_state, output_buffer);
+        env->SetShortArrayRegion(lin, i * dec_frame_size, dec_frame_size, output_buffer);
+    }
 
-    return (jint)dec_frame_size;
+    return (jint)nSamples;
 }
 
 extern "C"

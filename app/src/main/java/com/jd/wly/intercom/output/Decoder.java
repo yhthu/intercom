@@ -1,19 +1,31 @@
 package com.jd.wly.intercom.output;
 
+import android.os.Handler;
+
+import com.jd.wly.intercom.data.AudioData;
+import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.AudioDataUtil;
 
 /**
- * 解码，输入类型是byte[]，输出类型是short[]
+ * 音频解码
  *
  * @author yanghao1
  */
-public class Decoder extends JobHandler<byte[], short[]> {
+public class Decoder extends JobHandler {
+
+    public Decoder(Handler handler) {
+        super(handler);
+    }
 
     @Override
-    public void handleRequest(byte[] audioData) {
-        short[] rawData = AudioDataUtil.spx2raw(audioData);
-        getNextJobHandler().handleRequest(rawData);
+    public void run() {
+        AudioData audioData;
+        // 当MessageQueue为空时，take方法阻塞
+        while ((audioData = MessageQueue.getInstance(MessageQueue.DECODER_DATA_QUEUE).take()) != null) {
+            audioData.setRawData(AudioDataUtil.spx2raw(audioData.getEncodedData()));
+            MessageQueue.getInstance(MessageQueue.TRACKER_DATA_QUEUE).put(audioData);
+        }
     }
 
     @Override

@@ -1,7 +1,10 @@
 package com.jd.wly.intercom.input;
 
 import android.media.AudioRecord;
+import android.os.Handler;
 
+import com.jd.wly.intercom.data.AudioData;
+import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.AECUtil;
 import com.jd.wly.intercom.util.Constants;
@@ -11,14 +14,16 @@ import com.jd.wly.intercom.util.Constants;
  *
  * @author yanghao1
  */
-public class Recorder extends JobHandler<short[], short[]> {
+public class Recorder extends JobHandler {
 
     public static AudioRecord audioRecord;
     // 音频大小
     private int inAudioBufferSize;
+    // 录音标志
+    private boolean isRecording = false;
 
-
-    public Recorder() {
+    public Recorder(Handler handler) {
+        super(handler);
         // 获取音频数据缓冲段大小
         inAudioBufferSize = AudioRecord.getMinBufferSize(
                 Constants.sampleRateInHz, Constants.inputChannelConfig, Constants.audioFormat);
@@ -31,15 +36,26 @@ public class Recorder extends JobHandler<short[], short[]> {
         }
     }
 
+    public boolean isRecording() {
+        return isRecording;
+    }
+
+    public void setRecording(boolean recording) {
+        isRecording = recording;
+    }
+
     @Override
-    public void handleRequest(short[] audioData) {
-        if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
-            audioRecord.startRecording();
+    public void run() {
+        while (isRecording) {
+            if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
+                audioRecord.startRecording();
+            }
+            // 实例化音频数据缓冲
+            short[] rawData = new short[inAudioBufferSize];
+            audioRecord.read(rawData, 0, inAudioBufferSize);
+            AudioData audioData = new AudioData(rawData);
+            MessageQueue.getInstance(MessageQueue.ENCODER_DATA_QUEUE).put(audioData);
         }
-        // 实例化音频数据缓冲
-        audioData = new short[inAudioBufferSize];
-        audioRecord.read(audioData, 0, inAudioBufferSize);
-        getNextJobHandler().handleRequest(audioData);
     }
 
     @Override

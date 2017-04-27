@@ -2,6 +2,8 @@ package com.jd.wly.intercom.input;
 
 import android.os.Handler;
 
+import com.jd.wly.intercom.data.AudioData;
+import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.Constants;
 
@@ -11,25 +13,19 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 /**
- * UDP多播发送
+ * Socket发送
  *
  * @author yanghao1
  */
-public class Sender extends JobHandler<byte[], byte[]> {
+public class Sender extends JobHandler {
 
-    // UI界面Handler
-    private Handler handler;
     // 组播Socket
     private MulticastSocket multicastSocket;
     // IPV4地址
     private InetAddress inetAddress;
 
-    public Sender() {
-
-    }
-
     public Sender(Handler handler) {
-        this.handler = handler;
+        super(handler);
         initMulticastNetwork();
     }
 
@@ -48,13 +44,17 @@ public class Sender extends JobHandler<byte[], byte[]> {
     }
 
     @Override
-    public void handleRequest(byte[] audioData) {
-        DatagramPacket datagramPacket = new DatagramPacket(
-                audioData, audioData.length, inetAddress, Constants.MULTI_BROADCAST_PORT);
-        try {
-            multicastSocket.send(datagramPacket);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void run() {
+        AudioData audioData;
+        while ((audioData = MessageQueue.getInstance(MessageQueue.SENDER_DATA_QUEUE).take()) != null) {
+            DatagramPacket datagramPacket = new DatagramPacket(
+                    audioData.getEncodedData(), audioData.getEncodedData().length,
+                    inetAddress, Constants.MULTI_BROADCAST_PORT);
+            try {
+                multicastSocket.send(datagramPacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

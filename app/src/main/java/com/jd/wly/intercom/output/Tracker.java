@@ -1,7 +1,10 @@
 package com.jd.wly.intercom.output;
 
 import android.media.AudioTrack;
+import android.os.Handler;
 
+import com.jd.wly.intercom.data.AudioData;
+import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.input.Recorder;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.util.Constants;
@@ -11,13 +14,16 @@ import com.jd.wly.intercom.util.Constants;
  *
  * @author yanghao1
  */
-public class Tracker extends JobHandler<short[], short[]> {
+public class Tracker extends JobHandler {
 
     private AudioTrack audioTrack;
     // 音频大小
     private int outAudioBufferSize;
+    // 播放标志
+    private boolean isPlaying = true;
 
-    public Tracker() {
+    public Tracker(Handler handler) {
+        super(handler);
         // 获取音频数据缓冲段大小
         outAudioBufferSize = AudioTrack.getMinBufferSize(
                 Constants.sampleRateInHz, Constants.outputChannelConfig, Constants.audioFormat);
@@ -25,16 +31,28 @@ public class Tracker extends JobHandler<short[], short[]> {
         audioTrack = new AudioTrack(Constants.streamType,
                 Constants.sampleRateInHz, Constants.outputChannelConfig, Constants.audioFormat,
                 outAudioBufferSize, Constants.trackMode, Recorder.audioRecord.getAudioSessionId());
+        audioTrack.play();
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public void setPlaying(boolean playing) {
+        isPlaying = playing;
     }
 
     @Override
-    public void handleRequest(short[] audioData) {
-        short[] bytesPkg = audioData.clone();
-        audioTrack.play();
-        try {
-            audioTrack.write(bytesPkg, 0, bytesPkg.length);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public void run() {
+        AudioData audioData;
+        while (isPlaying && (audioData =
+                MessageQueue.getInstance(MessageQueue.TRACKER_DATA_QUEUE).take()) != null) {
+            short[] bytesPkg = audioData.getRawData();
+            try {
+                audioTrack.write(bytesPkg, 0, bytesPkg.length);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
