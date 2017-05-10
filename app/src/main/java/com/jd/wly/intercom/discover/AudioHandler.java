@@ -17,9 +17,6 @@ public class AudioHandler extends Handler {
     // Peer Discovering
     public static final int DISCOVERING_SEND = 0;
     public static final int DISCOVERING_RECEIVE = 1;
-    // Communication
-    public static final int AUDIO_INPUT = 2;
-    public static final int AUDIO_OUTPUT = 3;
 
     private WeakReference<AudioActivity> activityWeakReference;
 
@@ -32,14 +29,10 @@ public class AudioHandler extends Handler {
         super.handleMessage(msg);
         AudioActivity activity = activityWeakReference.get();
         if (activity != null) {
-            String content = (String) msg.obj;
             if (msg.what == DISCOVERING_SEND) {
-//                activity.toast(content);
-                activity.foundNewUser(IPUtil.getLocalIPAddress());
+                activity.updateMyself();
             } else if (msg.what == DISCOVERING_RECEIVE) {
-                activity.foundNewUser(content);
-            } else if (msg.what == AUDIO_OUTPUT) {
-                activity.toast(content);
+                activity.foundNewUser((String) msg.obj);
             }
         }
     }

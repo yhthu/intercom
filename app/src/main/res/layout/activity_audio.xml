@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
@@ -24,10 +23,23 @@
 
     </android.support.v7.widget.RecyclerView>
 
-    <TextView
-        android:id="@+id/activity_audio_current_ip"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:text="当前IP地址" />
+        android:orientation="horizontal"
+        android:layout_alignParentBottom="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="当前IP地址为："
+            android:textSize="15sp"/>
+
+        <TextView
+            android:id="@+id/activity_audio_current_ip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="255.255.255.255"
+            android:textSize="15sp"/>
+    </LinearLayout>
 </RelativeLayout>

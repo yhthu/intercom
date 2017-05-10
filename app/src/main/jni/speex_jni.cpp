@@ -44,21 +44,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_open(JNIEnv *env, jo
     speex_decoder_ctl(dec_state, SPEEX_GET_FRAME_SIZE, &dec_frame_size);
 
     // frame_size = enc_frame_size,
-    preprocess_state = speex_preprocess_state_init(160, 44100);//创建预处理对象
-
-    int denoise = 1;
-    int noiseSuppress = -80;
-    // 打开降噪
-    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_DENOISE, &denoise);
-    // 设置噪声的dB
-    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_NOISE_SUPPRESS, &noiseSuppress);
-
-
-    int agc = 1;
-    float q = 8000;
-    // 打开增益
-    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC, &agc);
-    speex_preprocess_ctl(preprocess_state, SPEEX_PREPROCESS_SET_AGC_LEVEL, &q);
+    preprocess_state = speex_preprocess_state_init(160, 16000);//创建预处理对象
 
     int vad = 1;
     int vadProbStart = 80;

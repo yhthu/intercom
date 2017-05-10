@@ -1,6 +1,8 @@
 package com.jd.wly.intercom;
 
 import android.app.Activity;
+import android.content.Context;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Process;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -12,7 +14,6 @@ import android.widget.Toast;
 
 import com.jd.wly.intercom.discover.AudioHandler;
 import com.jd.wly.intercom.discover.DiscoverRequest;
-import com.jd.wly.intercom.discover.DiscoverServer;
 import com.jd.wly.intercom.input.Encoder;
 import com.jd.wly.intercom.input.Recorder;
 import com.jd.wly.intercom.input.Sender;
@@ -24,7 +25,6 @@ import com.jd.wly.intercom.users.IntercomUserBean;
 import com.jd.wly.intercom.users.VerticalSpaceItemDecoration;
 import com.jd.wly.intercom.util.IPUtil;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -45,11 +45,7 @@ public class AudioActivity extends Activity {
     // 创建循环任务线程用于间隔的发送上线消息，获取局域网内其他的用户
     private ScheduledExecutorService discoverService = Executors.newScheduledThreadPool(1);
     // 创建7个线程的固定大小线程池，分别执行DiscoverServer，以及输入、输出音频
-    private ExecutorService threadPool = Executors.newFixedThreadPool(7);
-
-    // 探测局域网内其他用户的线程
-    private DiscoverRequest discoverRequest;
-    private DiscoverServer discoverServer;
+    private ExecutorService threadPool = Executors.newFixedThreadPool(6);
 
     // 音频输入
     private Recorder recorder;
@@ -78,10 +74,11 @@ public class AudioActivity extends Activity {
         localNetworkUser.setItemAnimator(new DefaultItemAnimator());
         intercomAdapter = new IntercomAdapter(userBeanList);
         localNetworkUser.setAdapter(intercomAdapter);
+        // 添加自己
+        addNewUser(new IntercomUserBean(IPUtil.getLocalIPAddress(), "我"));
         // 设置当前IP地址
         currentIp = (TextView) findViewById(R.id.activity_audio_current_ip);
-        String ip = "当前IP地址为：" + IPUtil.getLocalIPAddress();
-        currentIp.setText(ip);
+        currentIp.setText(IPUtil.getLocalIPAddress());
     }
 
     /**
@@ -89,19 +86,23 @@ public class AudioActivity extends Activity {
      */
     private void initData() {
         // 初始化探测线程
-        try {
-            discoverRequest = new DiscoverRequest(audioHandler);
-            discoverServer = new DiscoverServer(audioHandler);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        DiscoverRequest discoverRequest = new DiscoverRequest(audioHandler);
         // 启动探测局域网内其余用户的线程（每分钟扫描一次）
         discoverService.scheduleAtFixedRate(discoverRequest, 0, 10, TimeUnit.SECONDS);
-        // 启动探测线程接收
-        threadPool.execute(discoverServer);
+
+        // 初始化AudioManager配置
+        initAudioManager();
         // 初始化JobHandler
         initJobHandler();
+    }
+
+    /**
+     * 初始化AudioManager配置
+     */
+    private void initAudioManager() {
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setSpeakerphoneOn(true);
     }
 
     /**
@@ -172,17 +173,28 @@ public class AudioActivity extends Activity {
      * @param ipAddress
      */
     public void foundNewUser(String ipAddress) {
-        IntercomUserBean userBean;
-        if (ipAddress.contains(IPUtil.getLocalIPAddress())) {
-            userBean = new IntercomUserBean(ipAddress, "我");
-        } else {
-            userBean = new IntercomUserBean(ipAddress);
-        }
+        IntercomUserBean userBean = new IntercomUserBean(ipAddress);
         if (!userBeanList.contains(userBean)) {
-            userBeanList.add(0, userBean);
-            intercomAdapter.notifyItemInserted(0);
-            localNetworkUser.scrollToPosition(0);
+            addNewUser(userBean);
         }
+    }
+
+    /**
+     * 更新自身IP
+     */
+    public void updateMyself() {
+        currentIp.setText(IPUtil.getLocalIPAddress());
+    }
+
+    /**
+     * 增加新的用户
+     *
+     * @param userBean 新用户
+     */
+    private void addNewUser(IntercomUserBean userBean) {
+        userBeanList.add(0, userBean);
+        intercomAdapter.notifyItemInserted(0);
+        localNetworkUser.scrollToPosition(0);
     }
 
     @Override

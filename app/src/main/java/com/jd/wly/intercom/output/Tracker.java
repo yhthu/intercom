@@ -30,8 +30,7 @@ public class Tracker extends JobHandler {
         // 初始化音频播放
         audioTrack = new AudioTrack(Constants.streamType,
                 Constants.sampleRateInHz, Constants.outputChannelConfig, Constants.audioFormat,
-                outAudioBufferSize, Constants.trackMode, Recorder.audioRecord.getAudioSessionId());
-        audioTrack.play();
+                outAudioBufferSize, Constants.trackMode);
     }
 
     public boolean isPlaying() {
@@ -45,13 +44,19 @@ public class Tracker extends JobHandler {
     @Override
     public void run() {
         AudioData audioData;
-        while (isPlaying && (audioData =
-                MessageQueue.getInstance(MessageQueue.TRACKER_DATA_QUEUE).take()) != null) {
-            short[] bytesPkg = audioData.getRawData();
-            try {
-                audioTrack.write(bytesPkg, 0, bytesPkg.length);
-            } catch (Exception e) {
-                e.printStackTrace();
+        while ((audioData = MessageQueue.getInstance(MessageQueue.TRACKER_DATA_QUEUE).take()) != null) {
+            if (isPlaying()) {
+                short[] bytesPkg = audioData.getRawData();
+                try {
+                    if (audioTrack != null && audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
+                        if (audioTrack.getPlaybackRate() != AudioTrack.PLAYSTATE_PLAYING) {
+                            audioTrack.play();
+                        }
+                        audioTrack.write(bytesPkg, 0, bytesPkg.length);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

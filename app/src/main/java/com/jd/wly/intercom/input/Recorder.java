@@ -16,7 +16,7 @@ import com.jd.wly.intercom.util.Constants;
  */
 public class Recorder extends JobHandler {
 
-    public static AudioRecord audioRecord;
+    private AudioRecord audioRecord;
     // 音频大小
     private int inAudioBufferSize;
     // 录音标志
@@ -30,10 +30,6 @@ public class Recorder extends JobHandler {
         // 初始化音频录制
         audioRecord = new AudioRecord(Constants.audioSource,
                 Constants.sampleRateInHz, Constants.inputChannelConfig, Constants.audioFormat, inAudioBufferSize);
-        // 设置回音消除
-        if (AECUtil.isDeviceSupport()) {
-            AECUtil.initAEC(audioRecord.getAudioSessionId());
-        }
     }
 
     public boolean isRecording() {
@@ -62,8 +58,6 @@ public class Recorder extends JobHandler {
     public void free() {
         super.free();
         releaseAudioRecord();
-        // 释放回音消除
-        AECUtil.release();
     }
 
     /**
