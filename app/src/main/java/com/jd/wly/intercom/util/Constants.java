@@ -12,13 +12,11 @@ import android.media.MediaRecorder;
 public class Constants {
 
     // 组播端口号
-    public static final int MULTI_BROADCAST_PORT = 6789;
+    public static final int MULTI_BROADCAST_PORT = 9999;
     // 组播地址
-    public static final String MULTI_BROADCAST_IP = "224.5.6.7";
-
-    // 子网广播端口
-    public static final int BROADCAST_PORT = 8888;
-
+    public static final String MULTI_BROADCAST_IP = "224.9.9.9";
+    // 单播端口号
+    public static final int UNICAST_PORT = 10000;
     // 采样频率
     public static final int sampleRateInHz = 44100;
     // 音频数据格式:PCM 16位每个样本，保证设备支持。

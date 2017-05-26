@@ -20,7 +20,6 @@ public class Encoder extends JobHandler {
 
     @Override
     public void free() {
-        super.free();
         AudioDataUtil.free();
     }
 

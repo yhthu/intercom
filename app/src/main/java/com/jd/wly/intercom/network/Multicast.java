@@ -1,4 +1,4 @@
-package com.jd.wly.intercom.multicast;
+package com.jd.wly.intercom.network;
 
 import com.jd.wly.intercom.util.Constants;
 
@@ -23,7 +23,6 @@ public class Multicast {
         try {
             inetAddress = InetAddress.getByName(Constants.MULTI_BROADCAST_IP);
             multicastSocket = new MulticastSocket(Constants.MULTI_BROADCAST_PORT);
-            multicastSocket.setBroadcast(true);
             multicastSocket.setLoopbackMode(true);
             multicastSocket.joinGroup(inetAddress);
             multicastSocket.setTimeToLive(4);

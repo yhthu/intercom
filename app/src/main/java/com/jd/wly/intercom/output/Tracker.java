@@ -31,6 +31,7 @@ public class Tracker extends JobHandler {
         audioTrack = new AudioTrack(Constants.streamType,
                 Constants.sampleRateInHz, Constants.outputChannelConfig, Constants.audioFormat,
                 outAudioBufferSize, Constants.trackMode);
+        audioTrack.play();
     }
 
     public boolean isPlaying() {
@@ -48,12 +49,7 @@ public class Tracker extends JobHandler {
             if (isPlaying()) {
                 short[] bytesPkg = audioData.getRawData();
                 try {
-                    if (audioTrack != null && audioTrack.getState() == AudioTrack.STATE_INITIALIZED) {
-                        if (audioTrack.getPlaybackRate() != AudioTrack.PLAYSTATE_PLAYING) {
-                            audioTrack.play();
-                        }
-                        audioTrack.write(bytesPkg, 0, bytesPkg.length);
-                    }
+                    audioTrack.write(bytesPkg, 0, bytesPkg.length);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -63,7 +59,6 @@ public class Tracker extends JobHandler {
 
     @Override
     public void free() {
-        super.free();
         audioTrack.stop();
         audioTrack.release();
         audioTrack = null;

@@ -2,24 +2,18 @@ package com.jd.wly.intercom.output;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import com.jd.wly.intercom.data.AudioData;
 import com.jd.wly.intercom.data.MessageQueue;
-import com.jd.wly.intercom.discover.AudioHandler;
 import com.jd.wly.intercom.job.JobHandler;
-import com.jd.wly.intercom.multicast.Multicast;
+import com.jd.wly.intercom.network.Multicast;
+import com.jd.wly.intercom.service.IntercomService;
 import com.jd.wly.intercom.util.Command;
 import com.jd.wly.intercom.util.Constants;
 import com.jd.wly.intercom.util.IPUtil;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Arrays;
 
 /**
@@ -46,7 +40,8 @@ public class Receiver extends JobHandler {
             }
             // 判断数据报文类型，并做相应处理
             if (datagramPacket.getLength() == Command.DISC_REQUEST.getBytes().length ||
-                    datagramPacket.getLength() == Command.DISC_RESPONSE.getBytes().length ) {
+                    datagramPacket.getLength() == Command.DISC_LEAVE.getBytes().length ||
+                    datagramPacket.getLength() == Command.DISC_RESPONSE.getBytes().length) {
                 handleCommandData(datagramPacket);
             } else {
                 handleAudioData(datagramPacket);
@@ -66,18 +61,21 @@ public class Receiver extends JobHandler {
             byte[] feedback = Command.DISC_RESPONSE.getBytes();
             // 发送数据
             DatagramPacket sendPacket = new DatagramPacket(feedback, feedback.length,
-                    packet.getAddress(), Constants.BROADCAST_PORT);
+                    packet.getAddress(), Constants.MULTI_BROADCAST_PORT);
             try {
                 Multicast.getMulticast().getMulticastSocket().send(sendPacket);
             } catch (IOException e) {
                 e.printStackTrace();
             }
             // 发送Handler消息
-            sendMsg2MainThread(packet.getAddress().toString());
+            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_RECEIVE);
         } else if (content.equals(Command.DISC_RESPONSE) &&
                 !packet.getAddress().toString().equals("/" + IPUtil.getLocalIPAddress())) {
             // 发送Handler消息
-            sendMsg2MainThread(packet.getAddress().toString());
+            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_RECEIVE);
+        } else if (content.equals(Command.DISC_LEAVE) &&
+                !packet.getAddress().toString().equals("/" + IPUtil.getLocalIPAddress())) {
+            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_LEAVE);
         }
     }
 
@@ -97,16 +95,15 @@ public class Receiver extends JobHandler {
      *
      * @param content 内容
      */
-    private void sendMsg2MainThread(String content) {
+    private void sendMsg2MainThread(String content, int msgWhat) {
         Message msg = new Message();
-        msg.what = AudioHandler.DISCOVERING_RECEIVE;
+        msg.what = msgWhat;
         msg.obj = content;
         handler.sendMessage(msg);
     }
 
     @Override
     public void free() {
-        super.free();
         Multicast.getMulticast().free();
     }
 }

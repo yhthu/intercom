@@ -5,13 +5,11 @@ import android.os.Handler;
 import com.jd.wly.intercom.data.AudioData;
 import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.job.JobHandler;
-import com.jd.wly.intercom.multicast.Multicast;
+import com.jd.wly.intercom.network.Multicast;
 import com.jd.wly.intercom.util.Constants;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
 
 /**
  * Socket发送
@@ -41,7 +39,6 @@ public class Sender extends JobHandler {
 
     @Override
     public void free() {
-        super.free();
         Multicast.getMulticast().free();
     }
 }

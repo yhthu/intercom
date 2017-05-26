@@ -30,7 +30,6 @@ public class Decoder extends JobHandler {
 
     @Override
     public void free() {
-        super.free();
         AudioDataUtil.free();
     }
 }

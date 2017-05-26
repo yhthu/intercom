@@ -3,8 +3,6 @@ package com.jd.wly.intercom.data;
 import android.support.annotation.IntDef;
 
 import java.lang.annotation.Retention;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 

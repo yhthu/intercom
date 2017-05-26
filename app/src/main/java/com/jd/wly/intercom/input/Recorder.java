@@ -56,14 +56,7 @@ public class Recorder extends JobHandler {
 
     @Override
     public void free() {
-        super.free();
-        releaseAudioRecord();
-    }
-
-    /**
-     * 释放音频录制资源
-     */
-    private void releaseAudioRecord() {
+        // 释放音频录制资源
         audioRecord.stop();
         audioRecord.release();
         audioRecord = null;
