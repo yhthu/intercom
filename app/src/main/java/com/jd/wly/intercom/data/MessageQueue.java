@@ -24,7 +24,7 @@ public class MessageQueue {
 
     @Retention(SOURCE)
     @IntDef({ENCODER_DATA_QUEUE, SENDER_DATA_QUEUE, DECODER_DATA_QUEUE, TRACKER_DATA_QUEUE})
-    public @interface DataQueueType {
+    private @interface DataQueueType {
     }
 
     public static final int ENCODER_DATA_QUEUE = 0;

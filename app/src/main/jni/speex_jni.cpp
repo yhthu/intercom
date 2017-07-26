@@ -64,7 +64,7 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_encode
     jshort buffer[enc_frame_size];
     jbyte output_buffer[enc_frame_size];
     int nSamples = size / enc_frame_size;
-    int i, tot_bytes, curr_bytes = 0;
+    int i = 0, tot_bytes = 0, curr_bytes = 0;
 
     if (!codec_open)
         return 0;

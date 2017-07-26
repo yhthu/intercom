@@ -77,6 +77,7 @@ public class AudioActivity extends Activity {
     private static final int FOUND_NEW_USER = 0;
     private static final int REMOVE_USER = 1;
 
+
     /**
      * 跨进程回调更新界面
      */
