@@ -10,6 +10,7 @@ import com.jd.wly.intercom.util.Constants;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 
 /**
  * Socket发送
@@ -30,7 +31,10 @@ public class Sender extends JobHandler {
                     audioData.getEncodedData(), audioData.getEncodedData().length,
                     Multicast.getMulticast().getInetAddress(), Constants.MULTI_BROADCAST_PORT);
             try {
-                Multicast.getMulticast().getMulticastSocket().send(datagramPacket);
+                MulticastSocket multicastSocket = Multicast.getMulticast().getMulticastSocket();
+                if (multicastSocket != null) {
+                    multicastSocket.send(datagramPacket);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

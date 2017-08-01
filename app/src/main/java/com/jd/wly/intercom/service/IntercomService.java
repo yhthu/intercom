@@ -200,16 +200,12 @@ public class IntercomService extends Service {
      */
     private void showNotification() {
         Intent notificationIntent = new Intent(this, AudioActivity.class);
-//        notificationIntent.setAction(Command.MAIN_ACTION);
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.base_app_icon);
         Notification notification = new NotificationCompat.Builder(getApplicationContext())
                 .setContentTitle("对讲机")
-                .setTicker("对讲机")
                 .setContentText("正在使用对讲机")
-                .setSmallIcon(R.drawable.base_app_icon)
-                .setLargeIcon(Bitmap.createScaledBitmap(icon, 128, 128, false))
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true).build();
 

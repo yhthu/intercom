@@ -15,7 +15,10 @@ import android.os.RemoteException;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.jd.wly.intercom.service.IIntercomCallback;
@@ -30,13 +33,16 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AudioActivity extends Activity {
+public class AudioActivity extends Activity implements View.OnClickListener {
 
     private RecyclerView localNetworkUser;
+    private Button closeIntercom;
     private TextView currentIp;
 
     private List<IntercomUserBean> userBeanList = new ArrayList<>();
     private IntercomAdapter intercomAdapter;
+
+    private Intent intercomIntent;
 
     /**
      * onServiceConnected和onServiceDisconnected运行在UI线程中
@@ -76,7 +82,6 @@ public class AudioActivity extends Activity {
 
     private static final int FOUND_NEW_USER = 0;
     private static final int REMOVE_USER = 1;
-
 
     /**
      * 跨进程回调更新界面
@@ -137,6 +142,9 @@ public class AudioActivity extends Activity {
         localNetworkUser.setAdapter(intercomAdapter);
         // 添加自己
         addNewUser(new IntercomUserBean(IPUtil.getLocalIPAddress(), "我"));
+
+        closeIntercom = (Button) findViewById(R.id.close_intercom);
+        closeIntercom.setOnClickListener(this);
         // 设置当前IP地址
         currentIp = (TextView) findViewById(R.id.activity_audio_current_ip);
         currentIp.setText(IPUtil.getLocalIPAddress());
@@ -146,8 +154,14 @@ public class AudioActivity extends Activity {
         // 初始化AudioManager配置
         initAudioManager();
         // 启动Service
-        Intent intent = new Intent(AudioActivity.this, IntercomService.class);
-        startService(intent);
+        intercomIntent = new Intent(AudioActivity.this, IntercomService.class);
+        startService(intercomIntent);
+    }
+
+    @Override
+    public void onClick(View v) {
+        stopService(intercomIntent);
+        finish();
     }
 
     /**

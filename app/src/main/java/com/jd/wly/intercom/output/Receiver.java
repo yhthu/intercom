@@ -14,6 +14,7 @@ import com.jd.wly.intercom.util.IPUtil;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.MulticastSocket;
 import java.util.Arrays;
 
 /**
@@ -34,7 +35,10 @@ public class Receiver extends JobHandler {
             DatagramPacket datagramPacket = new DatagramPacket(receivedData, receivedData.length);
             try {
                 // 接收数据报文
-                Multicast.getMulticast().getMulticastSocket().receive(datagramPacket);
+                MulticastSocket multicastSocket = Multicast.getMulticast().getMulticastSocket();
+                if (multicastSocket != null) {
+                    multicastSocket.receive(datagramPacket);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -63,7 +67,10 @@ public class Receiver extends JobHandler {
             DatagramPacket sendPacket = new DatagramPacket(feedback, feedback.length,
                     packet.getAddress(), Constants.MULTI_BROADCAST_PORT);
             try {
-                Multicast.getMulticast().getMulticastSocket().send(sendPacket);
+                MulticastSocket multicastSocket = Multicast.getMulticast().getMulticastSocket();
+                if (multicastSocket != null) {
+                    multicastSocket.send(sendPacket);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
