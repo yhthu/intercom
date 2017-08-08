@@ -30,9 +30,9 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".service.IntercomService"
-            android:process=":intercom" />
+        <!--<service-->
+            <!--android:name=".service.IntercomService"-->
+            <!--android:process=":intercom" />-->
     </application>
 
 </manifest>

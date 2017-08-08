@@ -5,7 +5,6 @@ import android.os.Message;
 
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.network.Multicast;
-import com.jd.wly.intercom.service.IntercomService;
 import com.jd.wly.intercom.util.Command;
 import com.jd.wly.intercom.util.Constants;
 
@@ -52,7 +51,7 @@ public class SignInAndOutReq extends JobHandler {
      */
     private void sendMsg2MainThread() {
         Message message = new Message();
-        message.what = IntercomService.DISCOVERING_SEND;
+        message.what = AudioHandler.DISCOVERING_SEND;
         handler.sendMessage(message);
     }
 }

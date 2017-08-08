@@ -2,11 +2,11 @@ package com.jd.wly.intercom.input;
 
 import android.media.AudioRecord;
 import android.os.Handler;
+import android.util.Log;
 
 import com.jd.wly.intercom.data.AudioData;
 import com.jd.wly.intercom.data.MessageQueue;
 import com.jd.wly.intercom.job.JobHandler;
-import com.jd.wly.intercom.util.AECUtil;
 import com.jd.wly.intercom.util.Constants;
 
 /**
@@ -43,7 +43,9 @@ public class Recorder extends JobHandler {
     @Override
     public void run() {
         while (isRecording) {
-            if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_STOPPED) {
+            Log.d("Recorder", audioRecord.getRecordingState() + "");
+            // 启动录音
+            if (audioRecord.getRecordingState() == AudioRecord.STATE_INITIALIZED) {
                 audioRecord.startRecording();
             }
             // 实例化音频数据缓冲

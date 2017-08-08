@@ -5,9 +5,9 @@ import android.os.Message;
 
 import com.jd.wly.intercom.data.AudioData;
 import com.jd.wly.intercom.data.MessageQueue;
+import com.jd.wly.intercom.discover.AudioHandler;
 import com.jd.wly.intercom.job.JobHandler;
 import com.jd.wly.intercom.network.Multicast;
-import com.jd.wly.intercom.service.IntercomService;
 import com.jd.wly.intercom.util.Command;
 import com.jd.wly.intercom.util.Constants;
 import com.jd.wly.intercom.util.IPUtil;
@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
 
 /**
  * Created by yanghao1 on 2017/4/12.
@@ -75,14 +77,14 @@ public class Receiver extends JobHandler {
                 e.printStackTrace();
             }
             // 发送Handler消息
-            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_RECEIVE);
+            sendMsg2MainThread(packet.getAddress().toString(), AudioHandler.DISCOVERING_RECEIVE);
         } else if (content.equals(Command.DISC_RESPONSE) &&
                 !packet.getAddress().toString().equals("/" + IPUtil.getLocalIPAddress())) {
             // 发送Handler消息
-            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_RECEIVE);
+            sendMsg2MainThread(packet.getAddress().toString(), AudioHandler.DISCOVERING_RECEIVE);
         } else if (content.equals(Command.DISC_LEAVE) &&
                 !packet.getAddress().toString().equals("/" + IPUtil.getLocalIPAddress())) {
-            sendMsg2MainThread(packet.getAddress().toString(), IntercomService.DISCOVERING_LEAVE);
+            sendMsg2MainThread(packet.getAddress().toString(), AudioHandler.DISCOVERING_LEAVE);
         }
     }
 

@@ -1,136 +1,104 @@
 package com.jd.wly.intercom;
 
+import android.Manifest;
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
 import android.os.Process;
-import android.os.RemoteException;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.jd.wly.intercom.service.IIntercomCallback;
-import com.jd.wly.intercom.service.IIntercomService;
-import com.jd.wly.intercom.service.IntercomService;
+import com.jd.wly.intercom.discover.AudioHandler;
+import com.jd.wly.intercom.discover.SignInAndOutReq;
+import com.jd.wly.intercom.input.Encoder;
+import com.jd.wly.intercom.input.Recorder;
+import com.jd.wly.intercom.input.Sender;
+import com.jd.wly.intercom.output.Decoder;
+import com.jd.wly.intercom.output.Receiver;
+import com.jd.wly.intercom.output.Tracker;
 import com.jd.wly.intercom.users.IntercomAdapter;
 import com.jd.wly.intercom.users.IntercomUserBean;
 import com.jd.wly.intercom.users.VerticalSpaceItemDecoration;
+import com.jd.wly.intercom.util.Command;
 import com.jd.wly.intercom.util.IPUtil;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class AudioActivity extends Activity implements View.OnClickListener {
+public class AudioActivity extends Activity implements View.OnClickListener, View.OnTouchListener {
 
     private RecyclerView localNetworkUser;
+    private Button startIntercom;
     private Button closeIntercom;
     private TextView currentIp;
 
     private List<IntercomUserBean> userBeanList = new ArrayList<>();
     private IntercomAdapter intercomAdapter;
 
-    private Intent intercomIntent;
+    private AudioHandler audioHandler = new AudioHandler(this);
+    private SignInAndOutReq discoverRequest;
 
-    /**
-     * onServiceConnected和onServiceDisconnected运行在UI线程中
-     */
-    private IIntercomService intercomService;
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            intercomService = IIntercomService.Stub.asInterface(service);
-            try {
-                intercomService.registerCallback(intercomCallback);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
+    // 创建循环任务线程用于间隔的发送上线消息，获取局域网内其他的用户
+    private ScheduledExecutorService discoverService = Executors.newScheduledThreadPool(1);
+    // 创建7个线程的固定大小线程池，分别执行DiscoverServer，以及输入、输出音频
+    private ExecutorService threadPool = Executors.newFixedThreadPool(6);
 
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            intercomService = null;
-        }
-    };
+    // 音频输入
+    private Recorder recorder;
+    private Encoder encoder;
+    private Sender sender;
 
-    /**
-     * 被调用的方法运行在Binder线程池中，不能更新UI
-     */
-    private IIntercomCallback intercomCallback = new IIntercomCallback.Stub() {
-        @Override
-        public void findNewUser(String ipAddress) throws RemoteException {
-            sendMsg2MainThread(ipAddress, FOUND_NEW_USER);
-        }
+    // 音频输出
+    private Receiver receiver;
+    private Decoder decoder;
+    private Tracker tracker;
 
-        @Override
-        public void removeUser(String ipAddress) throws RemoteException {
-            sendMsg2MainThread(ipAddress, REMOVE_USER);
-        }
-    };
-
-    private static final int FOUND_NEW_USER = 0;
-    private static final int REMOVE_USER = 1;
-
-    /**
-     * 跨进程回调更新界面
-     */
-    private static class DisplayHandler extends Handler {
-        // 弱引用
-        private WeakReference<AudioActivity> activityWeakReference;
-
-        DisplayHandler(AudioActivity audioActivity) {
-            activityWeakReference = new WeakReference<>(audioActivity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            AudioActivity activity = activityWeakReference.get();
-            if (activity != null) {
-                if (msg.what == FOUND_NEW_USER) {
-                    activity.foundNewUser((String) msg.obj);
-                } else if (msg.what == REMOVE_USER) {
-                    activity.removeExistUser((String) msg.obj);
-                }
-            }
-        }
-    }
-
-    private Handler handler = new DisplayHandler(this);
-
-    /**
-     * 发送Handler消息
-     *
-     * @param content 内容
-     * @param msgWhat 消息类型
-     */
-    private void sendMsg2MainThread(String content, int msgWhat) {
-        Message msg = new Message();
-        msg.what = msgWhat;
-        msg.obj = content;
-        handler.sendMessage(msg);
-    }
+    private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_audio);
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO},
+                    MY_PERMISSIONS_REQUEST_RECORD_AUDIO);
+        }
+
         initView();
         initData();
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == MY_PERMISSIONS_REQUEST_RECORD_AUDIO) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(AudioActivity.this, "权限申请成功", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(AudioActivity.this, "权限申请失败", Toast.LENGTH_SHORT).show();
+            }
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
 
     private void initView() {
         // 设置用户列表
@@ -143,6 +111,8 @@ public class AudioActivity extends Activity implements View.OnClickListener {
         // 添加自己
         addNewUser(new IntercomUserBean(IPUtil.getLocalIPAddress(), "我"));
 
+        startIntercom = (Button) findViewById(R.id.start_intercom);
+        startIntercom.setOnTouchListener(this);
         closeIntercom = (Button) findViewById(R.id.close_intercom);
         closeIntercom.setOnClickListener(this);
         // 设置当前IP地址
@@ -151,33 +121,53 @@ public class AudioActivity extends Activity implements View.OnClickListener {
     }
 
     private void initData() {
+        // 初始化探测线程
+        discoverRequest = new SignInAndOutReq(audioHandler);
+        discoverRequest.setCommand(Command.DISC_REQUEST);
+        // 启动探测局域网内其余用户的线程（每分钟扫描一次）
+        discoverService.scheduleAtFixedRate(discoverRequest, 0, 10, TimeUnit.SECONDS);
         // 初始化AudioManager配置
         initAudioManager();
-        // 启动Service
-        intercomIntent = new Intent(AudioActivity.this, IntercomService.class);
-        startService(intercomIntent);
+        // 初始化JobHandler
+        initJobHandler();
     }
 
-    @Override
-    public void onClick(View v) {
-        stopService(intercomIntent);
-        finish();
-    }
 
     /**
      * 初始化AudioManager配置
      */
     private void initAudioManager() {
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setMode(AudioManager.STREAM_MUSIC);
         audioManager.setSpeakerphoneOn(true);
     }
 
+    /**
+     * 初始化JobHandler
+     */
+    private void initJobHandler() {
+        // 初始化音频输入节点
+        recorder = new Recorder(audioHandler);
+        encoder = new Encoder(audioHandler);
+        sender = new Sender(audioHandler);
+        // 初始化音频输出节点
+        receiver = new Receiver(audioHandler);
+        decoder = new Decoder(audioHandler);
+        tracker = new Tracker(audioHandler);
+        // 开启音频输入、输出
+        threadPool.execute(encoder);
+        threadPool.execute(sender);
+        threadPool.execute(receiver);
+        threadPool.execute(decoder);
+        threadPool.execute(tracker);
+    }
+
     @Override
-    protected void onStart() {
-        super.onStart();
-        Intent intent = new Intent(AudioActivity.this, IntercomService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
+    public void onClick(View v) {
+        if (v == closeIntercom) {
+//            discoverRequest.setCommand(Command.DISC_LEAVE);
+            Process.killProcess(Process.myPid());
+        }
     }
 
     /**
@@ -191,10 +181,10 @@ public class AudioActivity extends Activity implements View.OnClickListener {
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_F2 ||
                 keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
-            try {
-                intercomService.startRecord();
-            } catch (RemoteException e) {
-                e.printStackTrace();
+            if (!recorder.isRecording()) {
+                recorder.setRecording(true);
+                tracker.setPlaying(false);
+                threadPool.execute(recorder);
             }
             return true;
         }
@@ -205,10 +195,9 @@ public class AudioActivity extends Activity implements View.OnClickListener {
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_F2 ||
                 keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
-            try {
-                intercomService.stopRecord();
-            } catch (RemoteException e) {
-                e.printStackTrace();
+            if (recorder.isRecording()) {
+                recorder.setRecording(false);
+                tracker.setPlaying(true);
             }
             return true;
         }
@@ -216,14 +205,23 @@ public class AudioActivity extends Activity implements View.OnClickListener {
     }
 
     @Override
-    public void onBackPressed() {
-        // 发送离开群组消息
-        try {
-            intercomService.leaveGroup();
-        } catch (RemoteException e) {
-            e.printStackTrace();
+    public boolean onTouch(View v, MotionEvent event) {
+        if (v == startIntercom) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (!recorder.isRecording()) {
+                    recorder.setRecording(true);
+                    tracker.setPlaying(false);
+                    threadPool.execute(recorder);
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (recorder.isRecording()) {
+                    recorder.setRecording(false);
+                    tracker.setPlaying(true);
+                }
+            }
+            return true;
         }
-        super.onBackPressed();
+        return false;
     }
 
     /**
@@ -263,16 +261,26 @@ public class AudioActivity extends Activity implements View.OnClickListener {
         intercomAdapter.notifyItemInserted(userBeanList.size() - 1);
     }
 
+
     @Override
-    protected void onStop() {
-        super.onStop();
-        if (intercomService != null && intercomService.asBinder().isBinderAlive()) {
-            try {
-                intercomService.unRegisterCallback(intercomCallback);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-            unbindService(serviceConnection);
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        free();
+    }
+
+    /**
+     * 释放系统资源
+     */
+    private void free() {
+        // 释放线程资源
+        recorder.free();
+        encoder.free();
+        sender.free();
+        receiver.free();
+        decoder.free();
+        tracker.free();
+        // 释放线程池
+        discoverService.shutdown();
+        threadPool.shutdown();
     }
 }

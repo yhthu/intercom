@@ -29,12 +29,26 @@
         android:layout_alignParentBottom="true"
         android:orientation="vertical">
 
-        <Button
-            android:id="@+id/close_intercom"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="关闭"
-            android:textSize="15sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/start_intercom"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="对讲"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/close_intercom"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="关闭"
+                android:textSize="15sp" />
+        </LinearLayout>
+
 
         <LinearLayout
             android:layout_width="match_parent"
