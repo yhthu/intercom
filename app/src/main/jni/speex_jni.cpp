@@ -72,12 +72,6 @@ extern "C"
 JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_encode
     (JNIEnv *env, jobject obj, jshortArray lin, jbyteArray encoded, jint size) {
 
-    struct timeval xTime;
-    int xRet = gettimeofday(&xTime, NULL);
-    long long xFactor = 1;
-    long long now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-    LOGD("初始化 = %lld", now);
-
     jshort buffer[enc_frame_size];
     jbyte output_buffer[enc_frame_size];
     int nSamples = size / enc_frame_size;
@@ -86,54 +80,21 @@ JNIEXPORT jint JNICALL Java_com_jd_wly_intercom_audio_Speex_encode
     if (!codec_open)
         return 0;
 
-    xRet = gettimeofday(&xTime, NULL);
-    now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-    LOGD("开始 = %lld", now);
-
     for (i = 0; i < nSamples; i++) {
         // 从Java中拷贝数据到C中，每次拷贝enc_frame_size = 160个short
         env->GetShortArrayRegion(lin, i*enc_frame_size, enc_frame_size, buffer);
-
-        xRet = gettimeofday(&xTime, NULL);
-        now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-        LOGD("第一步 = %lld", now);
-
         // 降噪、增益、静音检测等处理
         speex_preprocess_run(preprocess_state, buffer);
-
-        xRet = gettimeofday(&xTime, NULL);
-        now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-        LOGD("第二步 = %lld", now);
-
         // 编码数据到ebits中
         speex_bits_reset(&ebits);
         speex_encode_int(enc_state, buffer, &ebits);
-
-        xRet = gettimeofday(&xTime, NULL);
-        now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-        LOGD("第三步 = %lld", now);
-
         // 将编码数据写入output_buffer，每次最多写入enc_frame_size = 160个，实际写入curr_bytes个char
         curr_bytes = speex_bits_write(&ebits, (char *)output_buffer, enc_frame_size);
-
-        xRet = gettimeofday(&xTime, NULL);
-        now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-        LOGD("第四步 = %lld", now);
-
         // 将C层的char类型数据写入Java层的字节数组中，开始写入index为tot_bytes，本次写入curr_bytes
         env->SetByteArrayRegion(encoded, tot_bytes, curr_bytes, output_buffer);
-
-        xRet = gettimeofday(&xTime, NULL);
-        now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-        LOGD("第五步 = %lld", now);
-
         // 更新总数
         tot_bytes += curr_bytes;
     }
-
-    xRet = gettimeofday(&xTime, NULL);
-    now = (long long)(( xFactor * xTime.tv_sec * 1000) + (xTime.tv_usec / 1000));
-    LOGD("总共 = %lld", now);
 
     return (jint)tot_bytes;
 }
